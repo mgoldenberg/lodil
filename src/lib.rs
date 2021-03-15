@@ -1,3 +1,5 @@
+use err_derive::Error;
+
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -5,6 +7,14 @@ use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
 pub type ValExp<V> = (V, Option<SystemTime>);
+
+#[derive(Debug, Error)]
+pub enum KeyValueStoreError {
+    #[error(display = "Acquired read lock was poisoned")]
+    PoisonedReadLock,
+    #[error(display = "Acquired write lock was poisoned")]
+    PoisonedWriteLock,
+}
 
 #[derive(Debug, Clone)]
 pub struct KeyValueStore<K, V> {
@@ -22,37 +32,44 @@ where
         }
     }
 
-    pub fn insert(&mut self, key: K, value: V, expiration: Option<Duration>) -> Option<ValExp<V>> {
+    pub fn insert(
+        &mut self,
+        key: K,
+        value: V,
+        expiration: Option<Duration>,
+    ) -> Result<Option<ValExp<V>>, KeyValueStoreError> {
         let expiration = expiration.map(|duration| SystemTime::now() + duration);
-        match (*self.inner).write() {
-            Ok(mut map) => map.insert(key, (value, expiration)),
-            Err(e) => panic!("{:?}", e),
-        }
+        let result = (*self.inner)
+            .write()
+            .map_err(|_| KeyValueStoreError::PoisonedWriteLock)?
+            .insert(key, (value, expiration));
+        Ok(result)
     }
 
-    pub fn get(&mut self, key: &K) -> Option<ValExp<V>> {
+    pub fn get(&mut self, key: &K) -> Result<Option<ValExp<V>>, KeyValueStoreError> {
         let now = SystemTime::now();
-        let result = match (*self.inner).read() {
-            Ok(map) => map.get(key).cloned(),
-            Err(e) => panic!("{:?}", e),
-        };
-        match result {
-            Some((value, Some(expiration))) => {
-                if expiration < now {
-                    self.remove(&key).and(None)
-                } else {
-                    Some((value, Some(expiration)))
-                }
+        let result = (*self.inner)
+            .read()
+            .map_err(|_| KeyValueStoreError::PoisonedReadLock)?
+            .get(key)
+            .cloned();
+        if let Some((value, Some(expiration))) = result {
+            if expiration < now {
+                self.remove(&key).map(|_| None)
+            } else {
+                Ok(Some((value, Some(expiration))))
             }
-            other => other,
+        } else {
+            Ok(result)
         }
     }
 
-    pub fn remove(&mut self, key: &K) -> Option<ValExp<V>> {
-        match (*self.inner).write() {
-            Ok(mut kvs) => kvs.remove(key),
-            Err(e) => panic!("{:?}", e),
-        }
+    pub fn remove(&mut self, key: &K) -> Result<Option<ValExp<V>>, KeyValueStoreError> {
+        let result = (*self.inner)
+            .write()
+            .map_err(|_| KeyValueStoreError::PoisonedWriteLock)?
+            .remove(key);
+        Ok(result)
     }
 }
 
