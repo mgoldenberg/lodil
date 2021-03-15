@@ -4,9 +4,11 @@ use std::hash::Hash;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
+pub type ValExp<V> = (V, Option<SystemTime>);
+
 #[derive(Debug, Clone)]
 pub struct KeyValueStore<K, V> {
-    inner: Arc<RwLock<HashMap<K, (V, Option<SystemTime>)>>>,
+    inner: Arc<RwLock<HashMap<K, ValExp<V>>>>,
 }
 
 impl<K, V> KeyValueStore<K, V>
@@ -20,12 +22,7 @@ where
         }
     }
 
-    pub fn insert(
-        &mut self,
-        key: K,
-        value: V,
-        expiration: Option<Duration>,
-    ) -> Option<(V, Option<SystemTime>)> {
+    pub fn insert(&mut self, key: K, value: V, expiration: Option<Duration>) -> Option<ValExp<V>> {
         let expiration = expiration.map(|duration| SystemTime::now() + duration);
         match (*self.inner).write() {
             Ok(mut map) => map.insert(key, (value, expiration)),
@@ -33,7 +30,7 @@ where
         }
     }
 
-    pub fn get(&mut self, key: &K) -> Option<(V, Option<SystemTime>)> {
+    pub fn get(&mut self, key: &K) -> Option<ValExp<V>> {
         let now = SystemTime::now();
         let result = match (*self.inner).read() {
             Ok(map) => map.get(key).cloned(),
@@ -51,7 +48,7 @@ where
         }
     }
 
-    pub fn remove(&mut self, key: &K) -> Option<(V, Option<SystemTime>)> {
+    pub fn remove(&mut self, key: &K) -> Option<ValExp<V>> {
         match (*self.inner).write() {
             Ok(mut kvs) => kvs.remove(key),
             Err(e) => panic!("{:?}", e),
