@@ -110,4 +110,28 @@ mod tests {
         thread::sleep(expiration);
         assert_eq!(kvs.get(&key), Ok(None));
     }
+
+    #[test]
+    fn synchronize() {
+        let mut kvs = KeyValueStore::new();
+        let (key, value) = (1, 1);
+
+        let cloned = (kvs.clone(), key.clone(), value.clone());
+        let handle = thread::spawn(|| {
+            let (mut kvs, key, value) = cloned;
+            thread::sleep(Duration::from_secs(1));
+            assert_eq!(kvs.insert(key, value, None), Ok(Some(1)));
+        });
+
+        assert_eq!(kvs.get(&key), Ok(None));
+        loop {
+            if let Ok(Some(v)) = kvs.get(&key) {
+                assert_eq!(v, value);
+                break;
+            } else {
+                thread::sleep(Duration::from_secs(1));
+            }
+        }
+        handle.join().expect("should join without error");
+    }
 }
