@@ -74,4 +74,40 @@ where
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+    use std::thread;
+
+    #[test]
+    fn insert_and_get() {
+        let mut kvs = KeyValueStore::new();
+        let (key, value) = (1, 1);
+        assert_eq!(kvs.insert(key, value, None), Ok(None));
+        assert_eq!(kvs.get(&key), Ok(Some(value)));
+    }
+
+    #[test]
+    fn update_and_get() {
+        let mut kvs = KeyValueStore::new();
+        let (key, value, update) = (1, 1, 2);
+        assert_eq!(kvs.insert(key, value, None), Ok(None));
+        assert_eq!(kvs.insert(key, update, None), Ok(Some(value)));
+        assert_eq!(kvs.get(&key), Ok(Some(update)));
+    }
+
+    #[test]
+    fn empty_get() {
+        let mut kvs = KeyValueStore::<_, ()>::new();
+        assert_eq!(kvs.get(&1), Ok(None));
+    }
+
+    #[test]
+    fn expired() {
+        let mut kvs = KeyValueStore::new();
+        let (key, value, expiration) = (1, 1, Duration::from_secs(1));
+        assert_eq!(kvs.insert(key, value, Some(expiration)), Ok(None));
+        assert_eq!(kvs.get(&key), Ok(Some(value)));
+        thread::sleep(expiration);
+        assert_eq!(kvs.get(&key), Ok(None));
+    }
+}
