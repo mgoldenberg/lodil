@@ -6,9 +6,9 @@ use std::hash::Hash;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
-pub type KeyValueStoreResult<V> = Result<Option<(V, Option<SystemTime>)>, KeyValueStoreError>;
+pub type KeyValueStoreResult<V> = Result<Option<V>, KeyValueStoreError>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Eq, PartialEq, Error)]
 pub enum KeyValueStoreError {
     #[error(display = "Acquired read lock was poisoned")]
     PoisonedReadLock,
@@ -43,7 +43,7 @@ where
             .write()
             .map_err(|_| KeyValueStoreError::PoisonedWriteLock)?
             .insert(key, (value, expiration));
-        Ok(result)
+        Ok(result.map(|(value, _)| value))
     }
 
     pub fn get(&mut self, key: &K) -> KeyValueStoreResult<V> {
@@ -57,10 +57,10 @@ where
             if expiration < now {
                 self.remove(&key).map(|_| None)
             } else {
-                Ok(Some((value, Some(expiration))))
+                Ok(Some(value))
             }
         } else {
-            Ok(result)
+            Ok(result.map(|(value, _)| value))
         }
     }
 
@@ -69,7 +69,7 @@ where
             .write()
             .map_err(|_| KeyValueStoreError::PoisonedWriteLock)?
             .remove(key);
-        Ok(result)
+        Ok(result.map(|(value, _)| value))
     }
 }
 
