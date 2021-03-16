@@ -3,7 +3,7 @@ name = "lodil"
 version = "0.1.0"
 authors = ["Michael Goldenberg <m@mgoldenberg.net>"]
 edition = "2018"
-description = "Lo(cal) Di(ctionary) L(ibrary) - kinda like Re(mote) Di(ctionary) S(erver), but local"
+description = "lodil - kinda like redis, but local"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
