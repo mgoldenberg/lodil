@@ -1,6 +1,6 @@
 # Lo(cal) Di(ctionary) L(ibrary)
 
-`lodil` is library that kind of reminds me of [Redis, the Re(mote) Di(ctionary) S(erver)](redis.io).
+`lodil` is a library that kind of reminds me of [Redis, the Re(mote) Di(ctionary) S(erver)](redis.io).
 Except it's local. And it's a library. And it... was written as an exercise.
 
 **Note**: _for a better experience reading this README, and the code-level
