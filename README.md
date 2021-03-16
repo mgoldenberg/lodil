@@ -4,7 +4,7 @@
 Except it's local. And it's a library. And it... was written as an exercise.
 
 **Note**: _for a better experience reading this README, and the code-level
-docuementation run `cargo doc --no-deps` to generate a rustdoc and then navigate
+documentation, run `cargo doc --no-deps` to generate a rustdoc and then navigate
 your browser to the `target/doc/lodil/index.html`._
 
 ## [`KeyValueStore`]
