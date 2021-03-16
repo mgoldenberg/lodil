@@ -1,3 +1,6 @@
+#![feature(external_doc)]
+#![doc(include = "../README.md")]
+
 use err_derive::Error;
 
 use std::collections::HashMap;
@@ -6,7 +9,7 @@ use std::hash::Hash;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
-/// Convenient type synonym returned by all [`KeyValueStore`] methods.
+/// Convenient type definition returned by all [`KeyValueStore`] methods.
 pub type KeyValueStoreResult<V> = Result<Option<V>, KeyValueStoreError>;
 
 /// Error types that can be returned from [`KeyValueStore`] methods.
@@ -94,6 +97,9 @@ where
             .cloned();
         if let Some((value, Some(expiration))) = result {
             if expiration < now {
+                // This doesn't create a dead write lock
+                // because the read lock has been already
+                // been released.
                 self.remove(&key).map(|_| None)
             } else {
                 Ok(Some(value))
